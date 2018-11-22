@@ -1,6 +1,22 @@
 #%% [markdown]
 # ニューラルネットワークの学習
-
+#%% [markdown]
+'''
+## 学習の手順
+- 前提
+    - ニューラルネットワークは，適用可能な重みとバイアスがあり，
+    この重みとバイアスを訓練データに適応するように調整することを
+    「学習」と呼ぶ．
+- ステップ1（ミニバッチ）
+    - 訓練データの中からランダムに一部のデータを選び出す．
+- ステップ2（勾配の算出）
+    - ミニバッチの損失関数を減らすために，各重みパラメータの勾配を求める．
+    勾配は，損失関数の値を減少させる方向を示す．
+- ステップ3（パラメータを更新）
+    - 重みパラメータを勾配方向へ微小量だけ更新する．
+- ステップ4（繰り返す）
+    - ステップ 1〜3 を繰り返す．
+'''
 #%% [markdown]
 # 数値微分
 
@@ -195,3 +211,84 @@ class TwoLayerNet:
         grads['b1'] = np.sum(da1, axis=0)
 
         return grads
+
+#%%
+net = TwoLayerNet(input_size=784
+                 ,hidden_size=100
+                 ,output_size=10)
+
+#%%
+print(net.params['W1'].shape)
+print(net.params['b1'].shape)
+print(net.params['W2'].shape)
+print(net.params['b2'].shape)
+#%%
+y = net.predict(np.random.rand(100,784))
+
+#%% [markdown]
+# ミニバッチ学習の実装
+
+#%%
+import matplotlib.pyplot as plt
+from dataset.mnist import load_mnist
+
+# データの読み込み
+(x_train, t_train), (x_test, t_test) = load_mnist(normalize=True, one_hot_label=True)
+
+network = TwoLayerNet(input_size=784, hidden_size=50, output_size=10)
+
+iters_num = 10000  # 繰り返しの回数を適宜設定する
+train_size = x_train.shape[0]
+batch_size = 100
+learning_rate = 0.1
+
+train_loss_list = []
+train_acc_list = []
+test_acc_list = []
+
+iter_per_epoch = max(train_size / batch_size, 1)
+
+for i in range(iters_num):
+    batch_mask = np.random.choice(train_size, batch_size)
+    x_batch = x_train[batch_mask]
+    t_batch = t_train[batch_mask]
+    
+    # 勾配の計算
+    #grad = network.numerical_gradient(x_batch, t_batch)
+    grad = network.gradient(x_batch, t_batch)
+    
+    # パラメータの更新
+    for key in ('W1', 'b1', 'W2', 'b2'):
+        network.params[key] -= learning_rate * grad[key]
+    
+    loss = network.loss(x_batch, t_batch)
+    train_loss_list.append(loss)
+    
+    if i % iter_per_epoch == 0:
+        train_acc = network.accuracy(x_train, t_train)
+        test_acc = network.accuracy(x_test, t_test)
+        train_acc_list.append(train_acc)
+        test_acc_list.append(test_acc)
+        print("train acc, test acc | " + str(train_acc) + ", " + str(test_acc))
+
+# グラフの描画
+markers = {'train': 'o', 'test': 's'}
+x = np.arange(len(train_acc_list))
+plt.plot(x, train_acc_list, label='train acc')
+plt.plot(x, test_acc_list, label='test acc', linestyle='--')
+plt.xlabel("epochs")
+plt.ylabel("accuracy")
+plt.ylim(0, 1.0)
+plt.legend(loc='lower right')
+plt.show()
+
+#%%
+markers = {'train': 'o', 'test': 's'}
+x = np.arange(len(train_acc_list))
+plt.plot(x, train_acc_list, label='train acc')
+plt.plot(x, test_acc_list, label='test acc', linestyle='--')
+plt.xlabel("epochs")
+plt.ylabel("accuracy")
+plt.ylim(0, 1.0)
+plt.legend(loc='lower right')
+plt.show()
